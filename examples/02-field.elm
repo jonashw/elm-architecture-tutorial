@@ -1,38 +1,20 @@
 import Browser
-import Html exposing (Html, Attribute, div, input, text)
+import Html exposing (Html, Attribute, div, input, text, table, tr, th, td)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
-
-
-
--- MAIN
-
 
 main =
   Browser.sandbox { init = init, update = update, view = view }
 
 
-
--- MODEL
-
-
-type alias Model =
-  { content : String
-  }
+type alias Model = { content : String }
 
 
 init : Model
-init =
-  { content = "" }
+init = { content = "" }
 
 
-
--- UPDATE
-
-
-type Msg
-  = Change String
-
+type Msg = Change String
 
 update : Msg -> Model -> Model
 update msg model =
@@ -41,13 +23,31 @@ update msg model =
       { model | content = newContent }
 
 
-
--- VIEW
-
-
 view : Model -> Html Msg
 view model =
   div []
     [ input [ placeholder "Text to reverse", value model.content, onInput Change ] []
-    , div [] [ text (String.reverse model.content) ]
+    , table [style "border" "1px solid blue", style "border-collapse" "collapse"] 
+      [
+        tr [] 
+          [ th [] [text "x"]
+          , th [] [text "Original order"]
+          , th [] [text "Reversed"]
+          ]
+      , tr []
+        [ th [] [text "Original case"]
+        , td [] [text (model.content |> identity       |> identity)]
+        , td [] [text (model.content |> String.reverse |> identity)]
+        ]
+      , tr []
+        [ th [] [text "lower case"]
+        , td [] [text (model.content |> identity       |> String.toLower)]
+        , td [] [text (model.content |> String.reverse |> String.toLower)]
+        ]
+      , tr []
+        [ th [] [text "UPPER case"]
+        , td [] [text (model.content |> identity       |> String.toUpper)]
+        , td [] [text (model.content |> String.reverse |> String.toUpper)]
+        ]
+      ]
     ]
