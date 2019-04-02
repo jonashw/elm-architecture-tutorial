@@ -1,82 +1,52 @@
 import Browser
-import Html exposing (Html, text, pre)
+import Html exposing (Html, text, pre, button, div)
+import Html.Events exposing (onClick)
 import Http
 
-
-
 -- MAIN
-
-
 main =
   Browser.element
     { init = init
     , update = update
-    , subscriptions = subscriptions
+    , subscriptions = \model -> Sub.none
     , view = view
     }
 
-
-
 -- MODEL
-
-
 type Model
-  = Failure
+  = 
+    Ready
+  | Failure
   | Loading
   | Success String
 
-
 init : () -> (Model, Cmd Msg)
-init _ =
-  ( Loading
-  , Http.get
-      { url = "https://elm-lang.org/assets/public-opinion.txt"
-      , expect = Http.expectString GotText
-      }
-  )
+init _ = ( Ready , Cmd.none)
 
-
-
--- UPDATE
-
-
-type Msg
-  = GotText (Result Http.Error String)
-
+type Msg = GetText | GotText (Result Http.Error String)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    GetText ->
+      (model,Http.get
+        { url = "https://elm-lang.org/assets/public-opinion.txt"
+        , expect = Http.expectString GotText
+        })
     GotText result ->
       case result of
-        Ok fullText ->
-          (Success fullText, Cmd.none)
-
-        Err _ ->
-          (Failure, Cmd.none)
-
-
-
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-  Sub.none
-
-
-
--- VIEW
-
+        Ok fullText -> (Success fullText, Cmd.none)
+        Err _ -> (Failure, Cmd.none)
 
 view : Model -> Html Msg
 view model =
   case model of
-    Failure ->
-      text "I was unable to load your book."
-
-    Loading ->
-      text "Loading..."
-
-    Success fullText ->
-      pre [] [ text fullText ]
+    Ready -> 
+      button [onClick GetText] [text "Load book"]
+    Failure -> 
+      div []
+      [ div [] [text "I was unable to load your book."]
+      , button [onClick GetText] [text "Try again"]
+      ]
+    Loading -> text "Loading..."
+    Success fullText -> pre [] [ text fullText ]
