@@ -5,71 +5,48 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode exposing (Decoder, field, string)
 
-
-
--- MAIN
-
-
 main =
   Browser.element
     { init = init
     , update = update
-    , subscriptions = subscriptions
+    , subscriptions = \model -> Sub.none
     , view = view
     }
 
-
-
--- MODEL
-
-
 type Model
-  = Failure
+  = Failure String
   | Loading
   | Success String
 
-
 init : () -> (Model, Cmd Msg)
-init _ =
-  (Loading, getRandomCatGif)
-
-
-
--- UPDATE
-
+init _ = (Loading, getRandomCatGif)
 
 type Msg
   = MorePlease
   | GotGif (Result Http.Error String)
 
-
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    MorePlease ->
-      (Loading, getRandomCatGif)
-
+    MorePlease -> (Loading, getRandomCatGif)
     GotGif result ->
       case result of
-        Ok url ->
-          (Success url, Cmd.none)
+        Ok url -> (Success url, Cmd.none)
+        Err e -> (Failure (httpErrorString e), Cmd.none)
 
-        Err _ ->
-          (Failure, Cmd.none)
-
-
-
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-  Sub.none
-
-
-
--- VIEW
-
+httpErrorString : Http.Error -> String
+httpErrorString error =
+    case error of
+        Http.BadUrl text ->
+            "Bad Url: " ++ text
+        Http.Timeout ->
+            "Http Timeout"
+        Http.NetworkError ->
+            "Network Error"
+        Http.BadStatus code ->
+            "Bad Http Status: " ++ (String.fromInt code)
+        Http.BadBody response ->
+            "Bad Http Body: " ++ response
 
 view : Model -> Html Msg
 view model =
@@ -78,13 +55,13 @@ view model =
     , viewGif model
     ]
 
-
 viewGif : Model -> Html Msg
 viewGif model =
   case model of
-    Failure ->
+    Failure e ->
       div []
-        [ text "I could not load a random cat for some reason. "
+        [ text "I could not load a random cat for some reason: "
+        , text e
         , button [ onClick MorePlease ] [ text "Try Again!" ]
         ]
 
@@ -98,18 +75,9 @@ viewGif model =
         ]
 
 
-
--- HTTP
-
-
 getRandomCatGif : Cmd Msg
 getRandomCatGif =
   Http.get
     { url = "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=cat"
-    , expect = Http.expectJson GotGif gifDecoder
+    , expect = Http.expectJson GotGif (field "data" (field "image_url" string))
     }
-
-
-gifDecoder : Decoder String
-gifDecoder =
-  field "data" (field "image_url" string)
